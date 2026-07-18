@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: CadastroCliente
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: admin
+    password: password
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+logging:
+  file:
+    name: logs/cadastro-cliente.log
