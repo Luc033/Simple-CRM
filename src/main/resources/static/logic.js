@@ -12,11 +12,12 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-async () => {
-    addEventListener("submit", (e) => {
-        e.preventDefault();
-        const parametros = new URLSearchParams(window.location.search);
-        const clienteId = parametros.get("id");
+addEventListener("submit", (e) => {
+    e.preventDefault();
+    const parametros = new URLSearchParams(window.location.search);
+    const clienteId = parametros.get("id");
+
+    if (e.target.id === "form-cadastro") {
         const form = e.target;
         const dados = new FormData(form);
         const clientePreCriado = Object.fromEntries(dados);
@@ -24,35 +25,11 @@ async () => {
             "clienteId": clienteId,
             ...clientePreCriado
         };
-        console.log(clienteCriado);
-
-        if (clienteId) {
-            try {
-
-                const response = await fetch(`${url}/clientes`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(clienteCriado)
-                })
-                    .then(data => data.json())
-                    .catch(err => console.log(err));
-
-                if (response.ok) {
-                    mostrarToast("success", "Cliente atualizado com sucesso!");
-                    setTimeout(() => {
-                        return window.location.href = "index.html"
-                    }, 2600);
-                }
-            } catch (e) {
-                mostrarToast("erro", e + "\"VAI SE FODER \" + ");
-            }
-        }
+        salvarCadastroCliente(clienteCriado, clienteId ? "PUT" : "POST");
+    }
 
 
-    })
-}
+})
 
 
 async function carregarListagemClientes() {
@@ -175,4 +152,56 @@ function mostrarToast(tipo, mensagem) {
     indicador.classList.add(tipo === "success" ? "bg-success" : "bg-danger");
 
     toast.show();
+}
+
+async function salvarCadastroCliente(cliente, method) {
+    try {
+        console.log("Entrou no salvar cadastro");
+
+        const response = await fetch(`${url}/clientes`, {
+            method: method,
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(cliente)
+        });
+
+        console.log("Status:", response.status);
+        console.log("OK:", response.ok);
+
+        // Lê o JSON retornado pelo ControllerAdvice
+        const respostaBody = await response.json();
+
+        console.log("Resposta da API:", respostaBody);
+
+        if (!response.ok) {
+            console.error("Erro retornado pela API:", respostaBody);
+
+            mostrarToast(
+                "danger",
+                respostaBody.message || "Erro ao salvar cliente."
+            );
+
+            return;
+        }
+
+        mostrarToast(
+            "success",
+            method === "POST"
+                ? "Cliente cadastrado com sucesso!"
+                : "Cliente atualizado com sucesso!"
+        );
+
+        setTimeout(() => {
+            window.location.href = "index.html";
+        }, 2600);
+
+    } catch (erro) {
+        console.error("Erro de comunicação com a API:", erro);
+
+        mostrarToast(
+            "danger",
+            "Não foi possível comunicar com o servidor."
+        );
+    }
 }

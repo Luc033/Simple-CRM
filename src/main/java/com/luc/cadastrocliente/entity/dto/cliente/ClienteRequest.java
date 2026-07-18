@@ -21,7 +21,7 @@ public record ClienteRequest(
         String email,
 
         @NotBlank(message = "Telefone é obrigatório.")
-        @Size(min = 14)
+        @Size(min = 11)
         String telefone,
 
         @NotNull(message = "Data de nascimento é obrigatório")
@@ -49,7 +49,7 @@ public record ClienteRequest(
         @Size(min = 2, max = 2)
         String estado,
 
-        @NotBlank
+        @NotBlank(message = "CEP é obrigatório")
         @Size(min = 8, max = 8)
         String cep
 ) {
