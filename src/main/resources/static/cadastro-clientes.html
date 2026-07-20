@@ -68,7 +68,7 @@
 
                 <div class="col-md-4">
                     <label class="form-label obrigatorio" for="genero">Gênero:</label>
-                    <select class="form-control form-select" id="genero" required>
+                    <select class="form-control form-select" id="genero" name="genero" required>
                         <option value="" selected>-- Selecione um gênero --</option>
                         <option value="0">Masculino</option>
                         <option value="1">Feminino</option>
@@ -127,7 +127,7 @@
                     <div class="col-md">
                         <label class="form-label" for="complemento">Complemento:</label>
                         <input class="form-control" type="text" id="complemento" name="complemento"
-                               placeholder="Ex.: Apto 234" required>
+                               placeholder="Ex.: Apto 234">
                     </div>
 
                     <div class="col-md">
@@ -184,7 +184,7 @@
             </div>
         </div>
 
-        <button class="btn btn-success w-25" type="submit"  >Salvar</button>
+        <button id="btnSalvarCadastroCliente" class="btn btn-success w-25" type="submit"  >Salvar</button>
     </form>
 
     <div class="toast-container position-fixed top-0 end-0 p-3">
@@ -192,7 +192,6 @@
             <div class="toast-header">
                 <span class="rounded me-2 bg-success" style="width: 20px; height: 20px;"></span>
                 <strong class="me-auto" id="toastHeader">
-                    FullEsterco
                 </strong>
                 <small> agora </small>
 

@@ -12,19 +12,23 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-addEventListener("submit", (e) => {
+document.querySelector("#form-cadastro").addEventListener("submit", (e) => {
     e.preventDefault();
     const parametros = new URLSearchParams(window.location.search);
     const clienteId = parametros.get("id");
 
-    if (e.target.id === "form-cadastro") {
+    if (e.submitter.id === "btnSalvarCadastroCliente") {
         const form = e.target;
         const dados = new FormData(form);
+
         const clientePreCriado = Object.fromEntries(dados);
         const clienteCriado = {
             "clienteId": clienteId,
             ...clientePreCriado
         };
+        console.log("Campo genero: " + clienteCriado.genero);
+        console.log("Objeto do formulario pronto para enviar:")
+        console.log(clienteCriado);
         salvarCadastroCliente(clienteCriado, clienteId ? "PUT" : "POST");
     }
 
@@ -33,6 +37,7 @@ addEventListener("submit", (e) => {
 
 
 async function carregarListagemClientes() {
+    mostrarLoading(true);
     const response = await fetch(`${url}/clientes`)
         .then(res => res.json())
         .then(data => {
@@ -43,19 +48,42 @@ async function carregarListagemClientes() {
     tabela.innerHTML = "";
 
     if (response.length == 0) {
+        mostrarLoading(false);
         return tabela.innerHTML = "<tr><td colspan='5' class='text-center'>Nenhum cliente encontrado</td></tr>";
     }
     response.forEach(cliente => {
         tabela.innerHTML += `
+
+            
         <tr>
-            <td class="text-capitalize">${cliente.nome}</td>
-            <td>${cliente.telefone} - ${cliente.email.toLowerCase()}</td>
-            <td>${cliente.cidade.toUpperCase()}/${cliente.estado.toUpperCase()}</td>
-            <td>${!cliente.status ? "Ativo" : "Inativo"}</td>
-            <td><button class="btn btn-outline-danger rounded" type="button" onclick="abrirModal(0, ${cliente.id})">xxx</button></td>
+            <td class="text-capitalize td-cortado" style="max-width:">${cliente.nome}</td>
+            <td class="td-cortado">${cliente.telefone} <br/> ${cliente.email.toLowerCase()}</td>
+            <td class="td-cortado">${cliente.cidade.toUpperCase()}/${cliente.estado.toUpperCase()}</td>
+            <td class="text-truncate">${!cliente.status ? "Ativo" : "Inativo"}</td>
+            <td class="text-truncate">
+            <div class="dropdown position-static">
+            <button class="btn btn-outline-dark border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class=\"bi bi-three-dots-vertical\"></i>
+              </button>
+              <ul class="dropdown-menu z-3">
+                <li>
+                    <a class="dropdown-item z-3" href="/cadastro-clientes.html?id=${cliente.clienteId}">
+                        <i class="bi bi-pencil-square"></i> Editar
+                    </a>
+                </li>
+                <li>
+                    <button type="button" class="dropdown-item btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick=excluirCliente(${cliente.clienteId})>
+                        <i class="bi bi-trash-fill"></i>
+                        Excluir
+                    </button>
+                </li>
+              </ul>
+                </div>
+         </td>
         </tr>
          `;
     });
+    mostrarLoading(false);
 }
 
 async function carregarDadosCliente() {
@@ -65,6 +93,7 @@ async function carregarDadosCliente() {
     if (!clienteId) {
         return null;
     }
+    mostrarLoading(true);
 
     const getCliente = `${url}/clientes/${clienteId}`;
     const response = await fetch(getCliente)
@@ -96,7 +125,7 @@ async function carregarDadosCliente() {
 
     campos.push(inputNome, inputCpf, inputDn, inputGenero, inputTelefone, inputEmail, inputCep, inputLogradouro, inputNumero, inputComplemento, inputBairro, inputCidade, inputEstado);
     preencherCampos(response, campos);
-
+    mostrarLoading(false);
 
 }
 
@@ -108,8 +137,9 @@ function validarCampo(elem) {
     return true;
 }
 
-function preencherCampos(cliente, campos) {
-    campos.forEach((campo) => {
+async function preencherCampos(cliente, campos) {
+    await campos.forEach((campo) => {
+
         if (cliente[campo.id] != null) {
             campo.value = cliente[campo.id];
         }
@@ -119,7 +149,6 @@ function preencherCampos(cliente, campos) {
 
 
 function mostrarToast(tipo, mensagem) {
-    console.log("entrou no toast");
     const elementoToast = document.getElementById("toast");
     const toastBody = document.getElementById("toastBody");
     const toastHeader = document.getElementById("toastHeader");
@@ -156,8 +185,6 @@ function mostrarToast(tipo, mensagem) {
 
 async function salvarCadastroCliente(cliente, method) {
     try {
-        console.log("Entrou no salvar cadastro");
-
         const response = await fetch(`${url}/clientes`, {
             method: method,
             headers: {
@@ -166,13 +193,8 @@ async function salvarCadastroCliente(cliente, method) {
             body: JSON.stringify(cliente)
         });
 
-        console.log("Status:", response.status);
-        console.log("OK:", response.ok);
-
         // Lê o JSON retornado pelo ControllerAdvice
         const respostaBody = await response.json();
-
-        console.log("Resposta da API:", respostaBody);
 
         if (!response.ok) {
             console.error("Erro retornado pela API:", respostaBody);
@@ -194,7 +216,7 @@ async function salvarCadastroCliente(cliente, method) {
 
         setTimeout(() => {
             window.location.href = "index.html";
-        }, 2600);
+        }, 1600);
 
     } catch (erro) {
         console.error("Erro de comunicação com a API:", erro);
@@ -204,4 +226,88 @@ async function salvarCadastroCliente(cliente, method) {
             "Não foi possível comunicar com o servidor."
         );
     }
+}
+
+async function excluirCliente(id) {
+    try {
+        const confirmou = await confirmarAcao(
+            "Excluir cliente",
+            "Deseja realmente excluir este cliente?"
+        );
+
+        console.log("Confirmou: ", confirmou);
+        if (!confirmou) {
+            return null;
+        }
+        const res = await fetch(`${url}/clientes/${id}`, {
+            method: "DELETE"
+        }).then(res => {
+            if (res.ok) {
+                console.log("Deu certo todo: ", res);
+                mostrarToast("success", "Cliente excluido com sucesso!")
+                setTimeout(() => {
+                    carregarListagemClientes();
+                }, 500);
+            }
+        }).catch(erro => {
+            console.error("Erro ao excluir cliente:", erro);
+            mostrarToast("error", "Erro ao excluir cliente.");
+        })
+    } catch (erro) {
+        console.error("Erro ao excluir cliente:", erro);
+        mostrarToast("error", "Não foi possível comunicar com o servidor.");
+    }
+}
+
+function mostrarLoading(exibir) {
+    if (exibir === true) {
+        const overlay = document.createElement("div")
+        overlay.id = "divOverlay"
+        const body = document.querySelector("body")
+        overlay.innerHTML = `
+            <div class="position-fixed top-0 start-0 w-100 h-100
+                        d-flex justify-content-center align-items-center
+                        bg-dark bg-opacity-50"
+                 style="z-index: 999">
+                
+                <div class="d-flex flex-column align-items-center gap-3">                
+                    <div class="spinner-border text-light" role="status">
+                        <span class="visually-hidden">Aguarde...</span>
+                    </div>
+                      <span class="text-light">Aguarde...</span>
+                 </div>
+            </div>`
+        body.appendChild(overlay)
+
+    } else if (exibir === false) {
+        const body = document.querySelector("body")
+        body.removeChild(document.querySelector("#divOverlay"))
+    }
+}
+
+function confirmarAcao(titulo, mensagem) {
+    return new Promise((resolve) => {
+        const modalElement = document.getElementById("modalConfirmacao");
+        const tituloElement = document.getElementById("modalConfirmacaoTitulo");
+        const mensagemElement = document.getElementById("modalConfirmacaoMensagem");
+        const btnConfirmar = document.getElementById("btnModalConfirmar");
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+        tituloElement.textContent = titulo;
+        mensagemElement.textContent = mensagem;
+
+        btnConfirmar.onclick = () => {
+            resolve(true);
+            modal.hide();
+        };
+
+        modalElement.addEventListener(
+            "hidden.bs.modal",
+            () => resolve(false),
+            {once: true}
+        );
+
+        modal.show();
+    });
 }

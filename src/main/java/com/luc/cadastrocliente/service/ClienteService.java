@@ -1,8 +1,11 @@
 package com.luc.cadastrocliente.service;
 
 import com.luc.cadastrocliente.entity.Cliente;
+import com.luc.cadastrocliente.entity.dto.cliente.ClienteResponse;
 import com.luc.cadastrocliente.repository.ClienteRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,10 +43,16 @@ public class ClienteService {
         return clienteRepository.findAll();
     }
 
+    public Page<ClienteResponse> listar(Pageable pageable) {
+        return clienteRepository.findAll(pageable).map(ClienteResponse::new);
+    }
+
+    @Transactional
     public void deleteById(Long id) {
         if (clienteRepository.existsById(id)) {
             clienteRepository.deleteById(id);
+        }else {
+            throw new EntityNotFoundException("Cliente não encontrado: " + id);
         }
-        throw new EntityNotFoundException("Cliente não encontrado: " + id);
     }
 }

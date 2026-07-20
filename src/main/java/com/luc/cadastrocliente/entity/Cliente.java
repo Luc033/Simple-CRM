@@ -2,10 +2,7 @@ package com.luc.cadastrocliente.entity;
 
 import com.luc.cadastrocliente.entity.dto.cliente.ClienteRequest;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDate;
@@ -16,6 +13,7 @@ import java.time.LocalDate;
 @Setter
 @ToString
 @NoArgsConstructor
+@AllArgsConstructor
 public class Cliente {
 
     public Cliente(ClienteRequest request) {
@@ -84,7 +82,6 @@ public class Cliente {
     @Column(nullable = false, length = 2)
     private String estado;
 
-    @Column(nullable = false, length = 8)
+    @Column(nullable = false, length = 9)
     private String cep;
-
 }

@@ -50,7 +50,7 @@ public record ClienteRequest(
         String estado,
 
         @NotBlank(message = "CEP é obrigatório")
-        @Size(min = 8, max = 8)
+        @Size(min = 9, max = 9)
         String cep
 ) {
 }

@@ -6,6 +6,8 @@ import com.luc.cadastrocliente.entity.dto.cliente.ClienteIdDTO;
 import com.luc.cadastrocliente.entity.dto.cliente.ClienteRequest;
 import com.luc.cadastrocliente.service.ClienteService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +27,6 @@ public class ClienteController {
     public ResponseEntity<ClienteResponse> listarCliente(@PathVariable Long id){
         var cliente = clienteService.findById(id);
         return ResponseEntity.ok(new ClienteResponse(cliente));
-
     }
 
     // Testar se o MAP fez a conversão corretamente
@@ -33,6 +34,14 @@ public class ClienteController {
     public ResponseEntity<List<ClienteResponse>> listarClientes(){
         var clientes = clienteService.findAll();
         return ResponseEntity.ok(clientes.stream().map(ClienteResponse::new).toList());
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<ClienteResponse>> listar(Pageable pageable) {
+        Page<ClienteResponse> clientes =
+                clienteService.listar(pageable);
+
+        return ResponseEntity.ok(clientes);
     }
 
 
