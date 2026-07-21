@@ -1,2 +1,2 @@
-# Simple-CRM
-Sistema simples de CRM para estudo de aplicação web fullstack js vanilla + spring framework
+# Cadastro de Cliente Simplificado
+Sistema simples de cadastro de cliente para estudo de aplicação web fullstack js vanilla + spring framework
