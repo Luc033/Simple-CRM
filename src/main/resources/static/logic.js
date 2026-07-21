@@ -1,5 +1,15 @@
 const url = "http://localhost:8080";
 
+let paginaListaClientesAtual = 0;
+
+const filtrosListaClientesAtualAtuais = {
+    size: 10,
+    sort: "nome",
+    direction: "asc",
+    nome: "",
+    ativo: ""
+};
+
 window.addEventListener("DOMContentLoaded", () => {
     const paginaAtual = window.location.pathname;
 
@@ -37,54 +47,33 @@ document.querySelector("#form-cadastro").addEventListener("submit", (e) => {
 
 
 async function carregarListagemClientes() {
+    let pagina;
     mostrarLoading(true);
-    const response = await fetch(`${url}/clientes`)
-        .then(res => res.json())
-        .then(data => {
-            console.log(data);
-            return data;
-        })
-    const tabela = document.getElementById("tblCustomers");
-    tabela.innerHTML = "";
+    try {
+        pagina = await buscarClientes({
+            page: paginaListaClientesAtual,
+            ...filtrosListaClientesAtualAtuais
+        });
+    } catch (erro) {
+        mostrarToast(
+            "error",
+            erro.message ?? "Ocorreu um erro ao buscar os clientes."
+        );
 
-    if (response.length == 0) {
+        console.error("Erro retornado durante a busca:", erro);
         mostrarLoading(false);
-        return tabela.innerHTML = "<tr><td colspan='5' class='text-center'>Nenhum cliente encontrado</td></tr>";
+        return;
     }
-    response.forEach(cliente => {
-        tabela.innerHTML += `
 
-            
-        <tr>
-            <td class="text-capitalize td-cortado" style="max-width:">${cliente.nome}</td>
-            <td class="td-cortado">${cliente.telefone} <br/> ${cliente.email.toLowerCase()}</td>
-            <td class="td-cortado">${cliente.cidade.toUpperCase()}/${cliente.estado.toUpperCase()}</td>
-            <td class="text-truncate">${!cliente.status ? "Ativo" : "Inativo"}</td>
-            <td class="text-truncate">
-            <div class="dropdown position-static">
-            <button class="btn btn-outline-dark border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class=\"bi bi-three-dots-vertical\"></i>
-              </button>
-              <ul class="dropdown-menu z-3">
-                <li>
-                    <a class="dropdown-item z-3" href="/cadastro-clientes.html?id=${cliente.clienteId}">
-                        <i class="bi bi-pencil-square"></i> Editar
-                    </a>
-                </li>
-                <li>
-                    <button type="button" class="dropdown-item btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick=excluirCliente(${cliente.clienteId})>
-                        <i class="bi bi-trash-fill"></i>
-                        Excluir
-                    </button>
-                </li>
-              </ul>
-                </div>
-         </td>
-        </tr>
-         `;
-    });
-    mostrarLoading(false);
+    try {
+        montarTabela(pagina.content);
+    } catch (erro) {
+        console.error("Erro ao montar a tabela:", erro);
+    } finally {
+        mostrarLoading(false);
+    }
 }
+
 
 async function carregarDadosCliente() {
     const parametros = new URLSearchParams(window.location.search);
@@ -145,6 +134,55 @@ async function preencherCampos(cliente, campos) {
         }
     })
 
+}
+
+async function buscarClientes({
+                                  page = 0,
+                                  size = 10,
+                                  sort = "id",
+                                  direction = "desc",
+                                  nome = "",
+                                  ativo = true,
+                                  cidade = "",
+                                  estado = ""
+                              } = {}) {
+    const params = new URLSearchParams();
+
+    params.set("page", page);
+    params.set("size", size);
+    params.set("sort", sort);
+    params.set("direction", direction);
+
+    if (nome) {
+        params.set("nome", nome);
+    }
+
+    if (ativo !== "") {
+        params.set("ativo", ativo);
+    }
+
+    if (cidade) {
+        params.set("cidade", cidade);
+    }
+
+    if (estado) {
+        params.set("estado", estado);
+    }
+
+    const response = await fetch(
+        `/clientes?${params.toString()}`
+    );
+
+    const body = await response.json();
+
+    if (!response.ok) {
+        console.error(body.message);
+        throw new Error(
+            body.mensagem ?? "Erro ao buscar clientes"
+        );
+    }
+
+    return body;
 }
 
 
@@ -235,7 +273,6 @@ async function excluirCliente(id) {
             "Deseja realmente excluir este cliente?"
         );
 
-        console.log("Confirmou: ", confirmou);
         if (!confirmou) {
             return null;
         }
@@ -243,7 +280,6 @@ async function excluirCliente(id) {
             method: "DELETE"
         }).then(res => {
             if (res.ok) {
-                console.log("Deu certo todo: ", res);
                 mostrarToast("success", "Cliente excluido com sucesso!")
                 setTimeout(() => {
                     carregarListagemClientes();
@@ -259,29 +295,55 @@ async function excluirCliente(id) {
     }
 }
 
-function mostrarLoading(exibir) {
-    if (exibir === true) {
-        const overlay = document.createElement("div")
-        overlay.id = "divOverlay"
-        const body = document.querySelector("body")
-        overlay.innerHTML = `
-            <div class="position-fixed top-0 start-0 w-100 h-100
-                        d-flex justify-content-center align-items-center
-                        bg-dark bg-opacity-50"
-                 style="z-index: 999">
-                
-                <div class="d-flex flex-column align-items-center gap-3">                
-                    <div class="spinner-border text-light" role="status">
-                        <span class="visually-hidden">Aguarde...</span>
-                    </div>
-                      <span class="text-light">Aguarde...</span>
-                 </div>
-            </div>`
-        body.appendChild(overlay)
+function proximaPaginaListaClientes() {
+    paginaListaClientesAtual++;
+    carregarListagemClientes();
+}
 
-    } else if (exibir === false) {
-        const body = document.querySelector("body")
-        body.removeChild(document.querySelector("#divOverlay"))
+function mostrarLoading(exibir) {
+
+    if (exibir) {
+
+        if (document.querySelector("#divOverlay")) {
+            return;
+        }
+
+        const overlay = document.createElement("div");
+
+        overlay.id = "divOverlay";
+        overlay.className = "loading-overlay";
+
+        overlay.innerHTML = `
+            <div class="d-flex flex-column align-items-center gap-3">
+
+                <div class="spinner-border text-light" role="status">
+                    <span class="visually-hidden">Aguarde...</span>
+                </div>
+
+                <span class="text-light">
+                    Aguarde...
+                </span>
+
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        requestAnimationFrame(() => {
+            overlay.classList.add("show");
+        });
+
+    } else {
+
+        const overlay = document.querySelector("#divOverlay");
+
+        if (!overlay) return;
+
+        overlay.classList.remove("show");
+
+        overlay.addEventListener("transitionend", () => {
+            overlay.remove();
+        }, { once: true });
     }
 }
 
@@ -310,4 +372,48 @@ function confirmarAcao(titulo, mensagem) {
 
         modal.show();
     });
+}
+
+
+function montarTabela(clientes) {
+
+    const tabela = document.getElementById("tblCustomers");
+    tabela.innerHTML = "";
+
+    if (clientes.length == 0) {
+        mostrarLoading(false);
+        return tabela.innerHTML = "<tr><td colspan='5' class='text-center'>Nenhum cliente encontrado</td></tr>";
+    }
+    clientes.forEach(cliente => {
+        tabela.innerHTML += `
+            
+        <tr>
+            <td class="text-capitalize td-cortado" style="max-width:">${cliente.nome}</td>
+            <td class="td-cortado">${cliente.telefone} <br/> ${cliente.email.toLowerCase()}</td>
+            <td class="td-cortado">${cliente.cidade.toUpperCase()}/${cliente.estado.toUpperCase()}</td>
+            <td class="text-truncate">${!cliente.status ? "Ativo" : "Inativo"}</td>
+            <td class="text-truncate">
+            <div class="dropdown position-static">
+            <button class="btn btn-outline-dark border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class=\"bi bi-three-dots-vertical\"></i>
+              </button>
+              <ul class="dropdown-menu z-3">
+                <li>
+                    <a class="dropdown-item z-3" href="/cadastro-clientes.html?id=${cliente.clienteId}">
+                        <i class="bi bi-pencil-square"></i> Editar
+                    </a>
+                </li>
+                <li>
+                    <button type="button" class="dropdown-item btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick=excluirCliente(${cliente.clienteId})>
+                        <i class="bi bi-trash-fill"></i>
+                        Excluir
+                    </button>
+                </li>
+              </ul>
+                </div>
+         </td>
+        </tr>
+         `;
+    });
+    mostrarLoading(false);
 }

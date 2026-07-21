@@ -21,3 +21,24 @@ table {
     width: 100%;
 }
 
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: rgba(0,0,0,.5);
+
+    z-index: 999;
+
+    opacity: 0;
+    transition: opacity .25s ease;
+
+    pointer-events: all;
+}
+
+.loading-overlay.show {
+    opacity: 1;
+}

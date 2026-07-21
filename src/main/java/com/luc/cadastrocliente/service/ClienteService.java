@@ -1,7 +1,9 @@
 package com.luc.cadastrocliente.service;
 
 import com.luc.cadastrocliente.entity.Cliente;
+import com.luc.cadastrocliente.entity.dto.cliente.ClienteFiltro;
 import com.luc.cadastrocliente.entity.dto.cliente.ClienteResponse;
+import com.luc.cadastrocliente.entity.specification.ClienteSpecification;
 import com.luc.cadastrocliente.repository.ClienteRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
@@ -43,8 +45,10 @@ public class ClienteService {
         return clienteRepository.findAll();
     }
 
-    public Page<ClienteResponse> listar(Pageable pageable) {
-        return clienteRepository.findAll(pageable).map(ClienteResponse::new);
+    public Page<ClienteResponse> listar(ClienteFiltro filtro, Pageable pageable) {
+        Page<Cliente> clientes = clienteRepository.findAll(ClienteSpecification.comFiltros(filtro), pageable);
+
+        return clientes.map(ClienteResponse::new);
     }
 
     @Transactional
